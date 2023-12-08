@@ -449,6 +449,12 @@ def ten_fold(args):
         data_neg_x.append((addition_negative_sample[i, 1], addition_negative_sample[i, 0]))
         data_neg_y.append((int(float(addition_negative_sample[i, 2]))))
         data_neg.append((addition_negative_sample[i, 1], addition_negative_sample[i, 0], addition_negative_sample[i, 2]))
+
+        # using all negative data
+        data_x.append((addition_negative_sample[i, 1], addition_negative_sample[i, 0]))
+        data_y.append((int(float(addition_negative_sample[i, 2]))))
+        data.append((addition_negative_sample[i, 1], addition_negative_sample[i, 0], addition_negative_sample[i, 2]))
+    
     for i in range(X.shape[0]):
         data_x.append((X[i, 1], X[i, 0]))
         data_y.append((int(float(X[i, 2]))))
@@ -456,7 +462,28 @@ def ten_fold(args):
     fold = 1
     kfold = StratifiedKFold(10, random_state=1, shuffle=True)
     total_rmse, total_mae = [], []
+
+    # balanced drug split of data
+    data_d = np.zeros((len(data_x)))
+    for i in range(data_d.shape[0]):
+        data_d[i] = data_x[i][0]
+    data_d = data_d.astype(np.int_)
+
+    drug_kfold = KFold(10, shuffle=True)
+
+    for k, (train_d, test_d) in enumerate(drug_kfold.split(np.arange(750))):
+        test = []
+        for d in test_d:
+            test.extend(np.where(data_d == d)[0].tolist())
+        train = list(set(np.arange(750 * 994).tolist()).difference(test))
+
+        train = np.array(train)
+        test = np.array(test)
+
+        '''
     for k, (train, test) in enumerate(kfold.split(data_x, data_y)):
+        '''
+        
         print("==================================fold {} start".format(fold))
         data = np.array(data)
         rmse, mae = train_test(data[train].tolist(), data[test].tolist(), data_neg, fold, args)
@@ -516,7 +543,7 @@ def main():
                         metavar = 'N', help = 'input batch size for testing')
     parser.add_argument('--dataset', type = str, default = 'yelp',
                         metavar = 'STRING', help = 'dataset')
-    parser.add_argument('--rawpath', type=str, default='D:/~博士/~收集的文献/需要研究的模型/MCC/My_dataset',
+    parser.add_argument('--rawpath', type=str, default='data',
     # parser.add_argument('--rawpath', type=str, default='/home/zhaohc/My_dataset',
                         metavar='STRING', help='rawpath')
     args = parser.parse_args()
